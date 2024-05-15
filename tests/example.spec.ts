@@ -97,27 +97,71 @@ test("check mobile responsiveness", async ({ page }) => {
   await page.goto("https://playwright.dev/");
   await page.setViewportSize({ width: 375, height: 667 }); // iPhone 6/7/8 dimensions
   await page
-    .locator(
-      '//*[@id="__docusaurus"]/nav/div[1]/div[2]/div[2]/button'
-    )
+    .locator('//*[@id="__docusaurus"]/nav/div[1]/div[2]/div[2]/button')
     .click();
 
   await expect(page.locator("header")).toBeVisible(); // Check if header is visible
 });
 
-test('Community Forums Link Test', async ({page, context}) => {
+test("Community Forums Link Test", async ({ page, context }) => {
   await page.goto("https://playwright.dev/");
 
-  const forumsLink = page.locator('//*[@id="__docusaurus"]/footer/div/div[1]/div[2]/ul/li[1]/a');
+  const forumsLink = page.locator(
+    '//*[@id="__docusaurus"]/footer/div/div[1]/div[2]/ul/li[1]/a'
+  );
 
   await expect(forumsLink).toBeVisible();
 
   const [newPage] = await Promise.all([
-    context.waitForEvent('page'),
-    forumsLink.click()
+    context.waitForEvent("page"),
+    forumsLink.click(),
   ]);
 
   await newPage.waitForLoadState();
-  await expect(newPage).toHaveURL("https://stackoverflow.com/questions/tagged/playwright");
+  await expect(newPage).toHaveURL(
+    "https://stackoverflow.com/questions/tagged/playwright"
+  );
+});
 
+test("No Console Errors", async ({ page }) => {
+  // create empty array of string
+  const errors: string[] = [];
+
+  // store any error that come while loading page on console
+  page.on("console", (msg) => {
+    if (msg.type() === "error") {
+      errors.push(msg.text());
+    }
+  });
+
+  await page.goto("https://playwright.dev/");
+  // Ideally it should not have any error
+  expect(errors).toHaveLength(0);
+});
+
+test("submit form without authentication", async ({ page }) => {
+  await page.goto("https://httpbin.org/forms/post");
+
+  // Fill in the form
+  await page.fill('input[name="custname"]', "John Doe");
+  await page.fill('input[name="custtel"]', "1234567890");
+  await page.fill('input[name="custemail"]', "johndoe@example.com");
+
+  // Submit the form
+  await page.click('button:has-text("submit order")');
+
+  // check correct URL is displayed
+  await expect(page).toHaveURL("https://httpbin.org/post");
+});
+
+test("verify email and password to login", async ({ page }) => {
+  // Navigate to the website's main page
+  await page.goto("https://www.saucedemo.com/inventory.html");
+  
+  await page.fill('input[name="user-name"]', "standard_user");
+  await page.fill('input[name="password"]', "secret_sauce");
+
+  await page.click('input[name="login-button"]');
+
+  await expect(page).toHaveURL("https://www.saucedemo.com/inventory.html");
 });
