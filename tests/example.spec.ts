@@ -165,3 +165,97 @@ test("verify email and password to login", async ({ page }) => {
 
   await expect(page).toHaveURL("https://www.saucedemo.com/inventory.html");
 });
+
+test("add multiple items to cart and verify cart count", async ({ page }) => {
+  await page.goto("https://www.saucedemo.com");
+
+  // Log in with credential mention in website
+  await page.fill('input[name="user-name"]', "standard_user");
+  await page.fill('input[name="password"]', "secret_sauce");
+  await page.click('input[name="login-button"]');
+
+  // Add multiple items to the cart
+  await page.click('button[data-test="add-to-cart-sauce-labs-backpack"]');
+  await page.click('button[data-test="add-to-cart-sauce-labs-bike-light"]');
+  await page.click('button[data-test="add-to-cart-sauce-labs-bolt-t-shirt"]');
+
+  await page.waitForSelector('.shopping_cart_badge', { state: 'visible' });
+
+  // Verify the cart count is updated
+  const cartCount = await page.locator('.shopping_cart_badge').textContent();
+  expect(cartCount).toBe('3');
+});
+
+test("remove item from cart and verify cart count", async ({ page }) => {
+  await page.goto("https://www.saucedemo.com");
+
+  // Log in
+  await page.fill('input[name="user-name"]', "standard_user");
+  await page.fill('input[name="password"]', "secret_sauce");
+  await page.click('input[name="login-button"]');
+
+  // Add an item to the cart
+  await page.click('button[data-test="add-to-cart-sauce-labs-backpack"]');
+
+  // Verify the cart count is 1
+  let cartCount = await page.locator('.shopping_cart_badge').textContent();
+  expect(cartCount).toBe('1');
+
+  // Remove the item from the cart
+  await page.click('button[data-test="remove-sauce-labs-backpack"]');
+
+  // Verify the cart count is removed
+  const cartBadge = await page.locator('.shopping_cart_badge');
+  await expect(cartBadge).not.toBeVisible();
+});
+
+test("verify logout functionality", async ({ page }) => {
+  await page.goto("https://www.saucedemo.com");
+
+  // Log in
+  await page.fill('input[name="user-name"]', "standard_user");
+  await page.fill('input[name="password"]', "secret_sauce");
+  await page.click('input[name="login-button"]');
+
+  // Open the menu and click on Logout
+  await page.click('#react-burger-menu-btn');
+  await page.click('#logout_sidebar_link');
+
+  // Verify that the user is redirected to the login page
+  await expect(page).toHaveURL("https://www.saucedemo.com/");
+  await expect(page.locator('input[name="login-button"]')).toBeVisible();
+});
+
+test("verify error message for invalid login", async ({ page }) => {
+  await page.goto("https://www.saucedemo.com");
+
+  // Try to log in with invalid credentials
+  await page.fill('input[name="user-name"]', "invalid_user");
+  await page.fill('input[name="password"]', "invalid_password");
+  await page.click('input[name="login-button"]');
+
+  // Verify the error message is displayed
+  await expect(page.locator('[data-test="error"]')).toBeVisible();
+  await expect(page.locator('[data-test="error"]')).toContainText("Epic sadface: Username and password do not match any user in this service");
+});
+
+test("verify item details", async ({ page }) => {
+  await page.goto("https://www.saucedemo.com");
+
+  // Log in
+  await page.fill('input[name="user-name"]', "standard_user");
+  await page.fill('input[name="password"]', "secret_sauce");
+  await page.click('input[name="login-button"]');
+
+  // Click on a specific item
+  await page.click('#item_4_title_link');
+
+  // Verify item details
+  const itemName = await page.locator('.inventory_details_name').textContent();
+  const itemDesc = await page.locator('.inventory_details_desc').textContent();
+  const itemPrice = await page.locator('.inventory_details_price').textContent();
+
+  expect(itemName).toBe("Sauce Labs Backpack");
+  expect(itemDesc).toContain("carry.allTheThings() with the sleek");
+  expect(itemPrice).toBe("$29.99");
+});
